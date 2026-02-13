@@ -1,12 +1,15 @@
-import { createDb } from '~/src/infrastructure/db/client'
 import { DrizzleProjectRepository } from '~/src/infrastructure/projects/drizzle-project.repository'
-import { requireUserSession } from '~/server/utils/require-user-session'
+import { createDb } from '~/src/infrastructure/db/client'
 
 export default defineEventHandler(async (event) => {
-  const userId = await requireUserSession(event)
   const config = useRuntimeConfig(event)
+  const userId = getHeader(event, 'x-user-id')
+
+  if (!userId) {
+    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+  }
+
   const db = createDb(config.sqlitePath)
   const repository = new DrizzleProjectRepository(db)
-
   return repository.listByUser(userId)
 })
